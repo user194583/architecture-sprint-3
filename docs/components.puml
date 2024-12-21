@@ -1,0 +1,119 @@
+@startuml
+title Система "Теплый дом" [Component Diagram]
+
+!include C4_Context.puml
+!include C4_Component.puml
+
+Container(apigateway, "Api Gateway", "Envoy", "Проверяет JWT Token при запросах, кроме контейнеров вэб приложения и сервиса авторизации")
+ContainerQueue(databus, "Data Bus", "Kafka", "Передает данные датчиков и историю действий юзера")
+
+
+Boundary(user, "User Service", "Container") {
+  Component(loginController, "Login Controller", "Golang")
+  Component(loginService, "Login", "Golang")
+  Rel(loginController, loginService, "Uses")
+
+  Component(regController, "Registration Controller", "Golang")
+  Component(regService, "Registration", "Golang")
+  Rel(regController, regService, "Uses")
+
+  Component(smsService, "Sms", "Golang")
+  Rel(loginService, smsService, "Uses")
+  Rel(regService, smsService, "Uses")
+
+  Component(jwtService, "JWT", "Golang")
+  Rel(loginService, jwtService, "Выдача токена")
+
+  Component(managerController, "Manager Controller", "Golang")
+  Component(managerService, "Manager", "Golang")
+  Rel(managerController, managerService, "Uses")
+
+  Component(usHistorySender, "User Action History Sendor", "Golang")
+  Rel(regService, usHistorySender, "Uses")
+  Rel(loginService, usHistorySender, "Uses")
+  Rel(managerService, usHistorySender, "uses")
+  Rel(usHistorySender, databus, "Send", "JSON/Data", "Отправка данных")
+
+  Component(commandSender, "Command Sendor", "Golang")
+  Rel(managerService, commandSender, "Uses")
+}
+
+Rel(apigateway, loginController, "HTTP")
+Rel(apigateway, regController, "HTTP")
+Rel(apigateway, managerController, "HTTP")
+
+System_Ext(sms, "СМС-шлюз", "Отправляет смс на номер телефона")
+Rel(smsService, sms, "POST", "HTTPS", "Отправка СМС")
+
+ContainerDb(userdb, "User Database", "Postgreql", "База данных с данными пользователей")
+Rel(loginService, userdb, "Read/Write", "SQL/TCP")
+Rel(regService, userdb, "Read/Write", "SQL/TCP")
+Rel(managerService, userdb, "Read/Write", "SQL/TCP")
+
+
+Boundary(history, "History Service", "Container") {
+    Component(huController, "User History Controller", "Golang")
+    Component(hu, "User History", "Golang")
+    Rel(huController, hu, "Uses")
+
+    Component(hdController, "Device History Controller", "Golang")
+    Component(hd, "Device History", "Golang")
+    Rel(hdController, hd, "Uses")
+
+    Component(huReader, "User History Reader", "Golang")
+    Rel(databus, huReader, "Read", "JSON/Data", "Прием данных")
+    Component(hdReader, "Device History Reader", "Golang")
+    Rel(databus, hdReader, "Read", "JSON/Data", "Прием данных")
+}
+
+Rel(apigateway, huController, "HTTP")
+Rel(apigateway, hdController, "HTTP")
+
+ContainerDb(historydbmaster, "History Database Slave", "Postgresql", "Хранит историю показаний датчиков и дейтвий юзеров")
+ContainerDb(historydbslave, "History Database Slave", "Postgresql", "Хранит историю показаний датчиков и дейтвий юзеров")
+Rel(historydbmaster, historydbslave, "Replica")
+Rel(hu, historydbslave, "READ", "SQL/TCP")
+Rel(hd, historydbslave, "READ", "SQL/TCP")
+Rel(huReader, historydbmaster, "WRITE", "SQL/TCP")
+Rel(hdReader, historydbmaster, "WRITE", "SQL/TCP")
+
+Boundary(deviceService, "Device Service", "Container") {
+    Component(taskController, "Task Controller", "Golang")
+    Component(task, "Task", "Golang")
+    Rel(taskController, task, "Uses")
+
+    Component(deviceController, "Device Controller", "Golang")
+    Component(device, "Device", "Golang")
+    Rel(deviceController, device, "Uses")
+    Rel(device, task, "Uses")
+
+    Component(commandReader, "Command Reader", "Golang")
+    Rel(commandReader, device, "Uses")
+
+    Component(duHistorySender, "Device User Action History Sendor", "Golang")
+    Rel(duHistorySender, databus, "Send", "JSON/Data", "Отправка данных")
+    Rel(task, duHistorySender, "Uses")
+    Rel(device, duHistorySender, "Uses")
+
+    Component(taskWorker, "Task Worker", "Golang")
+    Rel(task, taskWorker, "Управляет")
+    Component(deviceSender, "Device Data Sendor", "Golang")
+    Rel(deviceSender, databus, "Send", "JSON/Data", "Отправка данных")
+    Rel(taskWorker, deviceSender, "Uses")
+}
+
+ContainerQueue(commandbus, "Command Bus", "Kafka", "Передает команду на выключение задач и блокировку устройтв заблокированного юзера")
+Rel(commandSender, commandbus, "Send", "JSON/Command", "Отправка команды")
+Rel(commandbus, commandReader,  "Read", "JSON/Command", "Прием команды")
+
+Rel(apigateway, taskController, "HTTP")
+Rel(apigateway, deviceController, "HTTP")
+
+ContainerDb(devicedb, "Device Database", "Postgresql", "Хранит задания для устройств и дейсвий пользователя")
+Rel(task, devicedb, "Read/Write", "SQL/TCP")
+Rel(device, devicedb, "Read/Write", "SQL/TCP")
+
+System_Ext(devices, "Устройства", "Включают или выключают отопление и выдают данные о температуре")
+Rel(taskWorker, devices, "GET/POST", "HTTP", "Запросы к устройствам")
+
+@enduml
