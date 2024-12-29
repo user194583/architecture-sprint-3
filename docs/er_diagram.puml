@@ -18,9 +18,13 @@ entity User {
 entity House {
    * id: UUID <<generated>>
    --
-   * user_id: UUID <<FK>>
    * address: string
      description: text
+}
+
+entity UserHouse {
+    * user_id: UUID <<FK>>
+    * house_id: UUID <<FK>>
 }
 
 enum Role {
@@ -28,7 +32,8 @@ enum Role {
     Admin
 }
 
-User::id ||--|{ House::user_id
+User::id ||--o{ UserHouse::user_id
+House::id }|--|| UserHouse::house_id
 Role ||--|| User::role
 
 entity UserAction {
