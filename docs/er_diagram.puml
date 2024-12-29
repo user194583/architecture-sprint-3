@@ -1,0 +1,117 @@
+@startuml
+title Система "Теплый дом" [ER Diagram]
+
+left to right direction
+
+entity User {
+    * id: UUID <<generated>>
+    --
+    * name: string
+    * phone: int
+    * registratedAt: Date
+    * loginAt: Data
+    * isBlocked: bool
+    * blockedAt: Date
+    * role: Role
+}
+
+entity House {
+   * id: UUID <<generated>>
+   --
+   * address: string
+     description: text
+}
+
+entity UserHouse {
+    * user_id: UUID <<FK>>
+    * house_id: UUID <<FK>>
+}
+
+enum Role {
+    Operator
+    Admin
+}
+
+User::id ||--o{ UserHouse::user_id
+House::id }|--|| UserHouse::house_id
+Role ||--|| User::role
+
+entity UserAction {
+    * id: UUID <<generated>>
+    --
+    * user_id: UUID <<FK>>
+    * action: JSON
+    * createdAt: Date
+}
+
+User::id ||--o{ UserAction::user_id
+
+entity DeviceEvent {
+    * id: UUID <<generated>>
+    -- 
+    * device_id: UUID <<FK>>
+    * data: JSON
+    * createdAt: Date
+}
+
+enum DeviceType {
+    One
+    Two
+    Three
+}
+
+enum DeviceStatus {
+    On
+    Off
+    Blocked
+}
+
+entity Device {
+    * id: UUID <<generated>>
+    --
+    * house_id: UUID <<FK>>
+    * serial_number: string
+    * type: DeviceType
+    * status: DeviceStatus
+    * createdAt: Date
+    * blockedAt: Date
+      description: text
+}
+
+DeviceType ||--|| Device::type
+DeviceStatus ||--|| Device::status
+DeviceEvent::device_id }o--|| Device::id
+Device::house_id }o--|| House::id
+
+enum TaskType {
+    One
+    Two
+}
+
+enum TaskStatus {
+    On
+    Off
+    Blocked
+    Waiting
+    Sleeping
+}
+
+entity Task {
+   * id: UUID <<generated>>
+   --
+   * device_id:UUID <<FK>>
+   * type: TaskType
+   * status: TaskStatus
+   * author: user_id <<FK>> 
+   * createdAt: Date
+   * startedAt: Date
+   * stoppedAt: Date
+     description:text
+}
+
+Task::type ||--|| TaskType
+Task::status ||--|| TaskStatus
+Task::device_id }o--|| Device::id
+Task::user_id ||--|| User::id
+
+@enduml

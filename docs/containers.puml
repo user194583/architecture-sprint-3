@@ -1,0 +1,52 @@
+@startuml
+title Система "Теплый дом" [Container Diagram]
+
+!include C4_Container.puml
+
+Person(user, "Пользователь", "Имеет регистрацию в системе по номеру телефона")
+Container(cache, "Cache Service", "Varnish", "Кэширует контент и прокcирует запрос на статику")
+Rel(user, cache, "GET/POST", "https")
+
+Container(spa, "Web Application", "Angular SPA", "Хранит файлы вэб приложения")
+Rel(cache, spa, "GET", "HTTP", "Отдача статики")
+
+Container(apigateway, "Api Gateway", "Envoy", "Проверяет JWT Token при запросах, кроме контейнеров вэб приложения и сервиса авторизации")
+Rel(cache, apigateway, "GET/POST", "HTTPS", "Запросы к бэкенду")
+
+Container(userservice, "User Service", "Golang", "Сервис регистрации и авторизации. Выдает JWT token для запросов в систему с ролью.Управление пользователями.")
+Rel(apigateway, userservice, "GET/POST", "HTTP", "Регистрация, Авторизация, Управление пользователями")
+System_Ext(sms, "СМС-шлюз", "Отправляет смс на номер телефона")
+Rel(userservice, sms, "POST", "HTTPS", "Отправка СМС")
+ContainerDb(userdb, "User Database", "Postgreql", "База данных с данными пользователей")
+Rel(userservice, userdb, "Read/Write", "SQL/TCP")
+
+Container(history, "History Service", "Golang", "Принимает данные и выдает историю")
+Rel(apigateway, history, "GET", "HTTP, JWT", "Запросы истории показаний датчиков и действий юзера")
+ContainerDb(historydbmaster, "History Database Master", "Postgresql", "Хранит историю показаний датчиков и дейтвий юзеров")
+Rel(history, historydbmaster, "Read/Write", "SQL/TCP")
+ContainerDb(historydbslave, "History Database Slave", "Postgresql", "Хранит историю показаний датчиков и дейтвий юзеров")
+Rel(historydbmaster, historydbslave, "Replica")
+Rel(history, historydbslave, "READ", "SQL/TCP")
+
+Container(device, "Device Service", "Golang", "Собирает историю данных с устройств, состояние и получает задания")
+Rel(apigateway, device, "GET/POST", "HTTP, JWT", "Управление списоком заданий пользователя для устройств и их состоянием")
+
+ContainerQueue(commandbus, "Command Bus", "Kafka", "Передает команду на выключение задач и блокировку устройтв заблокированного юзера")
+Rel(userservice, commandbus, "Send", "JSON/Command", "Отправка команды")
+Rel(commandbus, device,  "Read", "JSON/Command", "Прием команды")
+
+ContainerQueue(databus, "Data Bus", "Kafka", "Передает данные датчиков и историю действий юзера")
+Rel(device, databus, "Send", "JSON/Data", "Отправка данных")
+Rel(databus, history, "Read", "JSON/Data", "Прием данных")
+Rel(userservice, databus, "Send", "JSON/Data", "Отправка данных")
+
+ContainerDb(devicedb, "Device Database", "Postgresql", "Хранит задания для устройств и дейсвий пользователя")
+Rel(device, devicedb, "Read/Write", "SQL/TCP")
+
+
+System_Ext(devices, "Устройства", "Включают или выключают отопление и выдают данные о температуре")
+Rel(device, devices, "GET/POST", "HTTP", "Запросы к устройствам")
+
+
+@enduml
+

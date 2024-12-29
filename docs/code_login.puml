@@ -1,0 +1,53 @@
+@startuml
+title  Система "Теплый дом" [Code Diagram]
+
+interface JWT {
+  +Generate(): string
+}
+
+interface UserRepository {
+  +SetLoginTime(DateTime): void
+}
+
+interface UserEvents {
+  +Publish(string)
+}
+interface CodeGenerator {
+  +Generate(): string
+  +VerifyByPhone(int, string)
+}
+
+interface Sms {
+  +SendCode(string)
+}
+
+class Login {
+  -jwt: JWT
+  -repo: UserRepository
+  -event: UserEvents
+  -code: CodeGenerator
+  -sms: Sms
+  +StartWithPhone(int): void
+  +VerifyCode(string): Result
+}
+
+Login  "jwt" o-- JWT
+Login "repo" o-- UserRepository
+Login "events" o-- UserEvents
+Login "code" o-- CodeGenerator
+Login "sms" o-- Sms
+
+note right of Login::StartWithPhone(int)
+    Exceptions: 
+         - Not found
+         - Internal Error
+end note
+
+note right of Login::VerifyCode(string)
+    Exceptions: 
+         - Not found
+         - Not valid
+         - Internal Error
+end note
+
+@enduml
