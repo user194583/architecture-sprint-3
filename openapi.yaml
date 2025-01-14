@@ -1,0 +1,255 @@
+openapi: 3.0.3
+info:
+  title: Теплый дом (Device Service)  - OpenAPI 3.0
+  description: |-
+    Описание REST API сервиса управления устройствами (Device Service) системы "Теплый дом" 
+  contact:
+    email: dev@some.mail.no-exists.ru
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+servers:
+  - url: https://some-addr.not_exitst.api/api/v3
+tags:
+  - name: Управление
+    description: Управление своими устройствами
+paths:
+  /manage:
+    post:
+      tags:
+        - Управление
+      summary: Добавление утройcтва
+      description: Метод для добавление нового устройcтва в систему
+      operationId: addDevice
+      requestBody:
+        description: Создает устройcтво в системе
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDevice'
+        required: true
+      responses:
+        '200':
+          description: Успех операции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'          
+        '400':
+          description: Неверные данные
+        '401':
+          description: Ошибка авторизации
+        '422':
+          description: Ошибка валидации
+      security:
+        - api_key: []
+    get:
+      tags:
+        - Управление
+      summary: Поучение списка устройтв 
+      description: Метод для получения списка устройcтва в системе
+      operationId: listDevice        
+      responses:
+        '200':
+          description: Успех операции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceList'          
+        '400':
+          description: Неверные данные
+        '401':
+          description: Ошибка авторизации
+        '422':
+          description: Ошибка валидации
+      security:
+        - api_key: []    
+  /manage/{id}:
+    put:
+      tags:
+        - Управление
+      summary: Обновление устройства
+      description: Метод для обновления устройcтва в системе
+      operationId: updateDevice
+      parameters:
+        - name: id
+          in: path
+          description: Идентификатор устройтва для удаления
+          required: true
+          schema:
+            type: string
+            example: d9cb8dac-ad9c-407e-9d3f-8ff0477d288f
+      requestBody:
+        description: Обновляет устройcтво в системе
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDevice'
+        required: true
+      responses:
+        '200':
+          description: Успех операции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'          
+        '400':
+          description: Неверные данные
+        '401':
+          description: Ошибка авторизации
+        '422':
+          description: Ошибка валидации
+      security:
+        - api_key: []
+    delete:
+      tags:
+        - Управление
+      summary: Удаление устройства
+      description: Метод для удаления устройcтва в системе
+      operationId: deleteDevice    
+      parameters:
+        - name: id
+          in: path
+          description: Идентификатор устройтва для удаления
+          required: true
+          schema:
+            type: string
+            example: d9cb8dac-ad9c-407e-9d3f-8ff0477d288f
+      responses:
+        '200':
+          description: Успех операции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'  
+        '400':
+          description: Неверные данные
+        '401':
+          description: Ошибка авторизации
+        '422':
+          description: Ошибка валидации          
+      security:
+        - api_key: []
+    get:
+      tags:
+        - Управление
+      summary: Получения данных устройства
+      description: Метод для получения данных устройcтва в системе
+      operationId: getDevice    
+      parameters:
+        - name: id
+          in: path
+          description: Идентификатор устройтва для получения
+          required: true
+          schema:
+            type: string
+            example: d9cb8dac-ad9c-407e-9d3f-8ff0477d288f
+      responses:
+        '200':
+          description: Успех операции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'  
+        '400':
+          description: Неверные данные
+        '401':
+          description: Ошибка авторизации
+        '422':
+          description: Ошибка валидации  
+      security:
+        - api_key: []
+
+components:
+  schemas:
+    CreateDevice:
+      required:
+        - serial_number
+        - type
+        - house_id
+      type: object
+      properties:
+        house_id:
+          type: string
+          description: Место где находится устройство
+          example: d9cb8dac-ad9c-407e-9d3f-8ff0477d288f
+        serial_number:
+          type: string
+          example: a-123-bcs
+        type:
+          type: string
+          description: Тип устройства
+          enum: 
+             - ONE
+             - TWO
+             - THREE
+        description:
+          type: string
+          example: Мое устройство 3
+    UpdateDevice:
+      type: object
+      properties:
+        house_id:
+          type: string
+          description: Место где находится устройство
+          example: d9cb8dac-ad9c-407e-9d3f-8ff0477d288f
+        serial_number:
+          type: string
+          example: a-123-bcs
+        type:
+          type: string
+          description: Тип устройства
+          enum: 
+             - ONE
+             - TWO
+             - THREE
+        description:
+          type: string
+          example: Мое устройство 3
+    Device:
+      type: object
+      properties:
+        id: 
+          type: string
+          example: a5cb8dad-ad9c-407e-9d3f-8ff0477d288c
+        house_id:
+          type: string
+          description: Место где находится устройство
+          example: d9cb8dac-ad9c-407e-9d3f-8ff0477d288f       
+        serial_number:
+          type: string
+          example: a-123-bcs
+        type:
+          type: string
+          description: Тип устройства
+          enum: 
+             - ONE
+             - TWO
+             - THREE
+        status:
+          type: string
+          description: Текущий статус устройтва
+          enum:
+            - ON
+            - OFF
+            - BLOCKED
+        description:
+          type: string
+          example: Мое устройство 3
+        created_at:
+          type: string
+          format: date-time
+        blocked_at:
+          type: string
+          format: date-time
+    DeviceList:
+      type: array
+      items:
+         $ref: '#/components/schemas/Device' 
+          
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: api_key
+      in: header
